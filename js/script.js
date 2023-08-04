@@ -44,7 +44,7 @@ orgImgElm.onload = async evt => {
     let tryTotal = 0
     let curTotal = 0
 
-    let size = 1
+    const len = 5
 
     const ticker = _ => {
         txtElm.innerHTML = "" +
@@ -52,15 +52,15 @@ orgImgElm.onload = async evt => {
             `draw: ${drawCnt}<br>` +
             `difference: ${curTotal}`
 
-        let x = 128
-        let y = 128
-        let c = 0
-        let pos = 0
+        let xArr = []
+        let yArr = []
+        let cArr = (new Array(len)).fill(0)
+        let posArr = []
 
-        if (size < Math.max(width, height)) {
-            tryImgData = tryCtx.getImageData(0, 0, width, height)
-            curImgData = curCtx.getImageData(0, 0, width, height)
+        tryImgData = tryCtx.getImageData(0, 0, width, height)
+        curImgData = curCtx.getImageData(0, 0, width, height)
 
+        for (let l = 0; l < len; l++) {
             for (let i = 0; i < orgImgData.data.length; i++) {
                 if (i % 4 !== 0) {
                     continue
@@ -70,25 +70,26 @@ orgImgElm.onload = async evt => {
 
                 const tmpVal = Math.abs(diff)
 
-                if (tmpVal > c) {
-                    c = tmpVal
-                    pos = i / 4
+                if (tmpVal > cArr[l] && (l === 0 || posArr[l] !== posArr[l - 1])) {
+                    cArr[l] = tmpVal
+                    posArr[l] = i / 4
+
+                    xArr[l] = (posArr[l] % width) + 5 * (Math.random() - .5)
+                    yArr[l] = Math.floor(posArr[l] / width) + 5 * (Math.random() - .5)
                 }
             }
+        }
 
-            x = (pos % width) + (Math.random() - .5)
-            y = Math.floor(pos / width) + (Math.random() - .5)
-
+        for (let l = 1; l < len; l++) {
+            tryCtx.strokeStyle = `rgb(${orgImgData.data[posArr[0] * 4]}, ${orgImgData.data[posArr[0] * 4 + 1]}, ${orgImgData.data[posArr[0] * 4 + 2]})`
+            tryCtx.lineCap = "round"
+            tryCtx.lineWidth = 1
             tryCtx.beginPath();
-            // tryCtx.fillStyle = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
-            // const radius = Math.ceil(Math.random() * 48 * Math.exp(- cnt / 65536))
-            tryCtx.fillStyle = `rgb(${orgImgData.data[pos * 4]}, ${orgImgData.data[pos * 4 + 1]}, ${orgImgData.data[pos * 4 + 2]})`
-            // const radius = Math.floor(Math.random() * 3)
-            const radius = size / 2
-            tryCtx.arc(x, y, radius, 0, 2 * Math.PI)
-            tryCtx.fill()
-
-            cnt++
+            tryCtx.moveTo(xArr[0], yArr[0])
+            for (let i = 1; i <= l; i++) {
+                tryCtx.lineTo(xArr[i], yArr[i])
+            }
+            tryCtx.stroke()
 
             tryImgData = tryCtx.getImageData(0, 0, width, height)
 
@@ -99,20 +100,20 @@ orgImgElm.onload = async evt => {
                 curCtx.putImageData(tryImgData, 0, 0)
                 drawCnt++
 
-                const circleElm = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-                circleElm.setAttribute("cx", x)
-                circleElm.setAttribute("cy", y)
-                circleElm.setAttribute("r", radius)
-                circleElm.setAttribute("fill", tryCtx.fillStyle)
-                curSvgElm.appendChild(circleElm)
-
-                size += 3
+                const lineElm = document.createElementNS("http://www.w3.org/2000/svg", "polyline")
+                const ptStr = (new Array(len)).fill(0).map((_, i) => `${xArr[i]}, ${yArr[i]}`).join(" ")
+                lineElm.setAttribute("fill", "none")
+                lineElm.setAttribute("points", ptStr)
+                lineElm.setAttribute("stroke-width", tryCtx.lineWidth)
+                lineElm.setAttribute("stroke-linecap", tryCtx.lineCap)
+                lineElm.setAttribute("stroke", tryCtx.strokeStyle)
+                curSvgElm.appendChild(lineElm)
             } else {
                 tryCtx.putImageData(curImgData, 0, 0)
-
-                size = 1
             }
         }
+
+        cnt++
 
         requestAnimationFrame(ticker)
     }
