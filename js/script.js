@@ -44,7 +44,7 @@ orgImgElm.onload = async evt => {
     let tryTotal = 0
     let curTotal = 0
 
-    const len = 5
+    let size = 0
 
     const ticker = _ => {
         txtElm.innerHTML = "" +
@@ -52,44 +52,48 @@ orgImgElm.onload = async evt => {
             `draw: ${drawCnt}<br>` +
             `difference: ${curTotal}`
 
-        let xArr = []
-        let yArr = []
-        let cArr = (new Array(len)).fill(0)
-        let posArr = []
+        let x = 128
+        let y = 128
+        let c = 0
+        let pos = 0
 
-        tryImgData = tryCtx.getImageData(0, 0, width, height)
-        curImgData = curCtx.getImageData(0, 0, width, height)
+        if (size < Math.max(width, height)) {
+            tryImgData = tryCtx.getImageData(0, 0, width, height)
+            curImgData = curCtx.getImageData(0, 0, width, height)
 
-        for (let l = 0; l < len; l++) {
             for (let i = 0; i < orgImgData.data.length; i++) {
                 if (i % 4 !== 0) {
                     continue
                 }
 
-                const diff = Math.abs(calcSaturate(orgImgData.data[i], orgImgData.data[i + 1], orgImgData.data[i + 2]) - calcSaturate(tryImgData.data[i], tryImgData.data[i + 1], tryImgData.data[i + 2]))
+                const origRgbArr = orgImgData.data.slice(i, i + 3)
+                const tryRgbArr = tryImgData.data.slice(i, i + 3)
+                const diff = Math.abs(calcSaturate(...origRgbArr) - calcSaturate(...tryRgbArr))
 
                 const tmpVal = Math.abs(diff)
 
-                if (tmpVal > cArr[l] && (l === 0 || posArr[l] !== posArr[l - 1])) {
-                    cArr[l] = tmpVal
-                    posArr[l] = i / 4
-
-                    xArr[l] = (posArr[l] % width) + 5 * (Math.random() - .5)
-                    yArr[l] = Math.floor(posArr[l] / width) + 5 * (Math.random() - .5)
+                if (tmpVal > c) {
+                    c = tmpVal
+                    pos = i / 4
                 }
             }
-        }
 
-        for (let l = 1; l < len; l++) {
-            tryCtx.strokeStyle = `rgb(${orgImgData.data[posArr[0] * 4]}, ${orgImgData.data[posArr[0] * 4 + 1]}, ${orgImgData.data[posArr[0] * 4 + 2]})`
-            tryCtx.lineCap = "round"
-            tryCtx.lineWidth = 1
+            x = (pos % width) + (Math.random() * 3 - 1.5)
+            y = Math.floor(pos / width) + (Math.random() * 3 - 1.5)
+
             tryCtx.beginPath();
-            tryCtx.moveTo(xArr[0], yArr[0])
-            for (let i = 1; i <= l; i++) {
-                tryCtx.lineTo(xArr[i], yArr[i])
-            }
-            tryCtx.stroke()
+            // tryCtx.fillStyle = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
+            // const radius = Math.ceil(Math.random() * 48 * Math.exp(- cnt / 65536))
+            const rgbArr = orgImgData.data.slice(pos * 4, pos * 4 + 3)
+            const rgbMaxVal = Math.max(...rgbArr)
+
+            tryCtx.fillStyle = `rgba(${rgbArr.map(val => val / 0.65).join(", ")}, ${0.65})`
+            // const radius = Math.floor(Math.random() * 3)
+            const radius = size / 2
+            tryCtx.arc(x, y, radius, 0, 2 * Math.PI)
+            tryCtx.fill()
+
+            cnt++
 
             tryImgData = tryCtx.getImageData(0, 0, width, height)
 
@@ -100,20 +104,20 @@ orgImgElm.onload = async evt => {
                 curCtx.putImageData(tryImgData, 0, 0)
                 drawCnt++
 
-                const lineElm = document.createElementNS("http://www.w3.org/2000/svg", "polyline")
-                const ptStr = (new Array(len)).fill(0).map((_, i) => `${xArr[i]}, ${yArr[i]}`).join(" ")
-                lineElm.setAttribute("fill", "none")
-                lineElm.setAttribute("points", ptStr)
-                lineElm.setAttribute("stroke-width", tryCtx.lineWidth)
-                lineElm.setAttribute("stroke-linecap", tryCtx.lineCap)
-                lineElm.setAttribute("stroke", tryCtx.strokeStyle)
-                curSvgElm.appendChild(lineElm)
+                const circleElm = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+                circleElm.setAttribute("cx", x)
+                circleElm.setAttribute("cy", y)
+                circleElm.setAttribute("r", radius)
+                circleElm.setAttribute("fill", tryCtx.fillStyle)
+                curSvgElm.appendChild(circleElm)
+
+                size *= 1.11
             } else {
                 tryCtx.putImageData(curImgData, 0, 0)
+
+                size = Math.max(3 * 5000 / (5000 + cnt), 1.1)
             }
         }
-
-        cnt++
 
         requestAnimationFrame(ticker)
     }
