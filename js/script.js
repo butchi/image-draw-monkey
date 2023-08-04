@@ -17,9 +17,9 @@ const orgCtx = orgCanvasElm.getContext("2d")
 const tryCtx = tryCanvasElm.getContext("2d", { willReadFrequently: true })
 const curCtx = curCanvasElm.getContext("2d", { willReadFrequently: true })
 
-const calcSaturate = (r, g, b) => 0.2989 * r + 0.5870 * g + 0.1140 * b //weights from CCIR 601 spec
-
 const txtElm = document.querySelector("div")
+
+charArr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 orgImgElm.onload = async evt => {
     const { width, height } = orgImgElm
@@ -32,19 +32,13 @@ orgImgElm.onload = async evt => {
     orgImgData = orgCtx.getImageData(0, 0, width, height)
 
     tryCtx.fillStyle = "rgb(255, 255, 255)"
-    // tryCtx.fillStyle = "rgb(128, 128, 128)"
     tryCtx.rect(0, 0, width, height)
     tryCtx.fill()
-    // curCtx.fillStyle = "rgb(255, 255, 255)"
-    // curCtx.rect(0, 0, width, height)
-    // curCtx.fill()
 
     let cnt = 0
     let drawCnt = 0
     let tryTotal = 0
     let curTotal = 0
-
-    let size = 0
 
     const ticker = _ => {
         txtElm.innerHTML = "" +
@@ -52,71 +46,48 @@ orgImgElm.onload = async evt => {
             `draw: ${drawCnt}<br>` +
             `difference: ${curTotal}`
 
-        let x = 128
-        let y = 128
-        let c = 0
-        let pos = 0
+        tryImgData = tryCtx.getImageData(0, 0, width, height)
+        curImgData = curCtx.getImageData(0, 0, width, height)
 
-        if (size < Math.max(width, height)) {
-            tryImgData = tryCtx.getImageData(0, 0, width, height)
-            curImgData = curCtx.getImageData(0, 0, width, height)
+        const x = Math.floor(Math.random() * width)
+        const y = Math.floor(Math.random() * height)
+        const size = Math.floor(Math.random() * height)
+        const char = charArr[Math.floor(Math.random() * charArr.length)]
+        rgbArr = [
+            Math.floor(Math.random() * 256),
+            Math.floor(Math.random() * 256),
+            Math.floor(Math.random() * 256),
+        ]
 
-            for (let i = 0; i < orgImgData.data.length; i++) {
-                if (i % 4 !== 0) {
-                    continue
-                }
+        tryCtx.fillStyle = `rgb(${rgbArr.join(", ")})`
+        tryCtx.font = `${size}px Courier`
+        tryCtx.textAlign = "center"
+        tryCtx.textBaseline = "middle"
+        tryCtx.fillText(char, x, y)
 
-                const origRgbArr = orgImgData.data.slice(i, i + 3)
-                const tryRgbArr = tryImgData.data.slice(i, i + 3)
-                const diff = Math.abs(calcSaturate(...origRgbArr) - calcSaturate(...tryRgbArr))
+        cnt++
 
-                const tmpVal = Math.abs(diff)
+        tryImgData = tryCtx.getImageData(0, 0, width, height)
 
-                if (tmpVal > c) {
-                    c = tmpVal
-                    pos = i / 4
-                }
-            }
+        tryTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - tryImgData.data[i]), 0)
+        curTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - curImgData.data[i]), 0)
 
-            x = (pos % width) + (Math.random() * 3 - 1.5)
-            y = Math.floor(pos / width) + (Math.random() * 3 - 1.5)
+        if (tryTotal < curTotal) {
+            curCtx.putImageData(tryImgData, 0, 0)
+            drawCnt++
 
-            tryCtx.beginPath();
-            // tryCtx.fillStyle = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`
-            // const radius = Math.ceil(Math.random() * 48 * Math.exp(- cnt / 65536))
-            const rgbArr = orgImgData.data.slice(pos * 4, pos * 4 + 3)
-            const rgbMaxVal = Math.max(...rgbArr)
-
-            tryCtx.fillStyle = `rgba(${rgbArr.map(val => val / 0.65).join(", ")}, ${0.65})`
-            // const radius = Math.floor(Math.random() * 3)
-            const radius = size / 2
-            tryCtx.arc(x, y, radius, 0, 2 * Math.PI)
-            tryCtx.fill()
-
-            cnt++
-
-            tryImgData = tryCtx.getImageData(0, 0, width, height)
-
-            tryTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - tryImgData.data[i]), 0)
-            curTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - curImgData.data[i]), 0)
-
-            if (tryTotal < curTotal) {
-                curCtx.putImageData(tryImgData, 0, 0)
-                drawCnt++
-
-                const circleElm = document.createElementNS("http://www.w3.org/2000/svg", "circle")
-                circleElm.setAttribute("cx", x)
-                circleElm.setAttribute("cy", y)
-                circleElm.setAttribute("r", radius)
-                circleElm.setAttribute("fill", tryCtx.fillStyle)
-                curSvgElm.appendChild(circleElm)
-
-                size *= 1.11
-            } else {
-                tryCtx.putImageData(curImgData, 0, 0)
-
-                size = Math.max(3 * 5000 / (5000 + cnt), 1.1)
-            }
+            const textElm = document.createElementNS("http://www.w3.org/2000/svg", "text")
+            textElm.setAttribute("x", x)
+            textElm.setAttribute("y", y)
+            textElm.setAttribute("font-size", size)
+            textElm.setAttribute("font-family", "Courier")
+            textElm.setAttribute("text-anchor", "middle")
+            textElm.setAttribute("dominant-baseline", "central")
+            textElm.setAttribute("fill", tryCtx.fillStyle)
+            textElm.textContent = char
+            curSvgElm.appendChild(textElm)
+        } else {
+            tryCtx.putImageData(curImgData, 0, 0)
         }
 
         requestAnimationFrame(ticker)
