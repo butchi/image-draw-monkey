@@ -52,6 +52,9 @@ orgImg.onload = async evt => {
     const ticker = _ => {
         txtElm.innerHTML = "" +
             `generation: ${cnt}<br>`
+        // `generation: ${cnt}<br>` +
+        // `draw: ${drawCnt}<br>` +
+        // `difference: ${curTotal}`
 
         tryImgData = tryCtx.getImageData(0, 0, 256, 256)
         curImgData = curCtx.getImageData(0, 0, 256, 256)
@@ -69,7 +72,7 @@ orgImg.onload = async evt => {
             // const rDiff = orgImgData.data[i] - tryImgData.data[i]
             // const gDiff = orgImgData.data[i + 1] - tryImgData.data[i + 1]
             // const bDiff = orgImgData.data[i + 2] - tryImgData.data[i + 2]
-            const diff = Math.max(orgImgData.data[i], orgImgData.data[i + 1], orgImgData.data[i + 2]) - Math.max(tryImgData.data[i], tryImgData.data[i + 1], tryImgData.data[i + 2])
+            const diff = Math.abs((orgImgData.data[i] + orgImgData.data[i + 1] + orgImgData.data[i + 2]) - (tryImgData.data[i] + tryImgData.data[i + 1] + tryImgData.data[i + 2]))
 
             const tmpVal = Math.abs(diff)
 
@@ -88,14 +91,15 @@ orgImg.onload = async evt => {
         // const radius = Math.ceil(Math.random() * 48 * Math.exp(- cnt / 65536))
         tryCtx.fillStyle = `rgb(${orgImgData.data[pos * 4]}, ${orgImgData.data[pos * 4 + 1]}, ${orgImgData.data[pos * 4 + 2]})`
         // const radius = Math.floor(Math.random() * 3)
-        const radius = Math.random() * 3
+        const radius = .5
+        // const radius = Math.random() * 3
         tryCtx.arc(x, y, radius, 0, 2 * Math.PI)
         tryCtx.fill()
 
         cnt++
 
         curCtx.putImageData(tryImgData, 0, 0)
-        requestAnimationFrame(ticker)
+        drawCnt++
 
         const circleElm = document.createElementNS("http://www.w3.org/2000/svg", "circle")
         circleElm.setAttribute("cx", x)
@@ -103,6 +107,8 @@ orgImg.onload = async evt => {
         circleElm.setAttribute("r", radius)
         circleElm.setAttribute("fill", tryCtx.fillStyle)
         curSvg.appendChild(circleElm)
+
+        requestAnimationFrame(ticker)
 
         // tryTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - tryImgData.data[i]), 0)
         // curTotal = [...orgImgData.data].reduce((p, c, i) => p + Math.abs(c - curImgData.data[i]), 0)
@@ -113,6 +119,14 @@ orgImg.onload = async evt => {
         // } else if (tryTotal < curTotal) {
         //     curCtx.putImageData(tryImgData, 0, 0)
         //     drawCnt++
+
+        //     const circleElm = document.createElementNS("http://www.w3.org/2000/svg", "circle")
+        //     circleElm.setAttribute("cx", x)
+        //     circleElm.setAttribute("cy", y)
+        //     circleElm.setAttribute("r", radius)
+        //     circleElm.setAttribute("fill", tryCtx.fillStyle)
+        //     curSvg.appendChild(circleElm)
+
         //     requestAnimationFrame(ticker)
         // } else {
         //     curCtx.putImageData(tryImgData, 0, 0)
