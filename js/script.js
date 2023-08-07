@@ -66,7 +66,7 @@ orgImgElm.onload = _evt => {
 
         const x = Math.floor(Math.random() * width)
         const y = Math.floor(Math.random() * width)
-        const size = Math.ceil(Math.random() * width)
+        const size = Math.ceil(Math.min((1 - Math.random() ** 3) * 32 / (1 - Math.random() ** 3), width))
         const char = charArr[Math.floor(Math.random() * charArr.length)]
         const hue = Math.floor(360 * Math.random())
         const saturation = Math.ceil(Math.random() * 98)
