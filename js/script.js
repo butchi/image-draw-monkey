@@ -10,12 +10,14 @@ const curCanvasElm = document.querySelector("canvas:nth-of-type(3)")
 const curSvgElm = document.querySelector("svg")
 const gElm = document.createElementNS("http://www.w3.org/2000/svg", "g")
 const styleElm = document.createElementNS("http://www.w3.org/2000/svg", "style")
+const descElm = document.createElementNS("http://www.w3.org/2000/svg", "desc")
 styleElm.textContent = `text {
     font-family: Courier;
     text-anchor: middle;
     dominant-baseline: central;
 }`
 curSvgElm.appendChild(styleElm)
+curSvgElm.appendChild(descElm)
 curSvgElm.appendChild(gElm)
 
 curCanvasElm.style.display = "none"
@@ -52,10 +54,15 @@ orgImgElm.onload = _evt => {
     let curTotal = 0
 
     const ticker = _ => {
-        txtElm.innerHTML = "" +
-            `generation: ${cnt}<br>` +
-            `draw: ${drawCnt}<br>` +
-            `difference: ${curTotal}`
+        const progressObj = {
+            generation: cnt,
+            draw: drawCnt,
+            difference: curTotal,
+        }
+
+        txtElm.innerHTML = Object.entries(progressObj).map(item => item.join(": ")).join("<br>")
+
+        descElm.textContent = JSON.stringify(progressObj)
 
         const x = Math.floor(Math.random() * width)
         const y = Math.floor(Math.random() * width)
