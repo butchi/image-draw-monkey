@@ -63,7 +63,7 @@ orgImgElm.onload = _evt => {
         const char = charArr[Math.floor(Math.random() * charArr.length)]
         const hue = Math.floor(360 * Math.random())
         const saturation = Math.ceil(Math.random() * 98)
-        const color = `hsl(${hue} 100% ${saturation}%)`
+        const color = `hsl(${hue}, 100%, ${saturation}%)`
 
         tryCtx.fillStyle = color
         tryCtx.font = `${size}px Courier`
